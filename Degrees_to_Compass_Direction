@@ -1,20 +1,25 @@
+// In geographical data, cardinal directions may be used to determine position. Wind direction can be characterized by compass degrees (0 to 360) using the point of origin. For example, "easterly" winds come from the East (90°) and go to the West.
+// When directional arrows are used, the base of the arrow starts at the origin direction and the arrow's point is shown 180° opposite the base. For example, "northerly" winds start in the North (0°) and move towards the South (180°). The arrow for the northerly wind would be depicted as 'N ⬇️'.
+// Further information is available at https://windy.app/blog/what-is-wind-direction.html .
 let
-    // Generate list of decimals starting at 0 and going up to 360, incrementing by +0.01
+    // Generating a list of numbers starting at 0.00 and going up to 360.00, incrementing by +0.01
     Source = List.Generate(() => 0, each _ < 360.00, each _ + 0.01),
     #"Converted to Table" = Table.FromList(Source, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
     #"Renamed Column1 to Degree" = Table.RenameColumns(#"Converted to Table",{{"Column1", "Degree"}}),
-    #"Changed Type to number" = Table.TransformColumnTypes(#"Renamed Column1 to Degree",{{"Degree", type number}}),
-    // Bucketed degree headings into groups of 45°
-    #"Added Direction" = Table.AddColumn(#"Changed Type to number", "Direction", each if [Degree] = null then null
-                                                                                else if [Degree] = 360 then "N"
-                                                                                else if [Degree] >= 315 then "NW"
-                                                                                else if [Degree] >= 270 then "W"
-                                                                                else if [Degree] >= 225 then "SW"
-                                                                                else if [Degree] >= 180 then "S"
-                                                                                else if [Degree] >= 135 then "SE"
-                                                                                else if [Degree] >= 90 then "E"
-                                                                                else if [Degree] >= 45 then "NE"
-                                                                                else if [Degree] >= 0 then "N"
-                                                                                else null, Text.Type)
+    #"Changed Degree type to number" = Table.TransformColumnTypes(#"Renamed Column1 to Degree",{{"Degree", type number}}),
+    // Bucketing cardinal directions into groups of 45° for a total of 8 unique groups (360° is the same as 0°).
+    #"Added Direction" = Table.AddColumn(#"Changed Degree type to number", "Direction", each if [Degree] = null then null
+                                                                                    else if [Degree] = 360 then "N ⬇️"
+                                                                                    else if [Degree] >= 315 then "NW ↘️"
+                                                                                    else if [Degree] >= 270 then "W ➡️"
+                                                                                    else if [Degree] >= 225 then "SW ↗️"
+                                                                                    else if [Degree] >= 180 then "S ⬆️"
+                                                                                    else if [Degree] >= 135 then "SE ↖️"
+                                                                                    else if [Degree] >= 90 then "E ⬅️"
+                                                                                    else if [Degree] >= 45 then "NE ↙️"
+                                                                                    else if [Degree] >= 0 then "N ⬇️"
+                                                                                    else null, Text.Type),
+    // Changing to the column type to currency to provide the appropriate level of decimal precision.
+    #"Changed Type" = Table.TransformColumnTypes(#"Added Direction",{{"Degree", Currency.Type}})
 in
-    #"Added Direction"
+    #"Changed Type"
